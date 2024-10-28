@@ -477,7 +477,7 @@ u32 get_unique_state_count(unsigned int *state_sequence, unsigned int state_coun
   u32 result = 0;
 
   for (i = 0; i < state_count; i++) {
-    state_id = state_sequence[i];
+    state_id = (i > 0 ? (state_sequence[i-1] << 16) : (0xFFFF << 16)) | (state_sequence[i] & 0xFFFF);
 
     if (kh_get(hs32, khs_state_ids, state_id) != kh_end(khs_state_ids)) {
       continue;
@@ -576,7 +576,7 @@ void update_fuzzs() {
   khs_state_ids = kh_init(hs32);
 
   for(i = 0; i < state_count; i++) {
-    unsigned int state_id = state_sequence[i];
+    unsigned int state_id = (i > 0 ? (state_sequence[i-1] << 16) : (0xFFFF << 16)) | (state_sequence[i] & 0xFFFF);
 
     if (kh_get(hs32, khs_state_ids, state_id) != kh_end(khs_state_ids)) {
       continue;
@@ -781,10 +781,10 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
 
     //Update the IPSM graph
     if (state_count > 1) {
-      unsigned int prevStateID = state_sequence[0];
+      unsigned int prevStateID = (0xFFFF << 16) | (state_sequence[0] & 0xFFFF);
 
       for(i=1; i < state_count; i++) {
-        unsigned int curStateID = state_sequence[i];
+        unsigned int curStateID = (state_sequence[i-1] << 16) | (state_sequence[i] & 0xFFFF);
         char fromState[STATE_STR_LEN], toState[STATE_STR_LEN];
         snprintf(fromState, STATE_STR_LEN, "%d", prevStateID);
         snprintf(toState, STATE_STR_LEN, "%d", curStateID);
@@ -907,7 +907,7 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
     unsigned int regional_state_count = q->regions[i].state_count;
     if (regional_state_count > 0) {
       //reachable_state_id is the last ID in the state_sequence
-      unsigned int reachable_state_id = q->regions[i].state_sequence[regional_state_count - 1];
+      unsigned int reachable_state_id = (regional_state_count > 1 ? (q->regions[i].state_sequence[regional_state_count - 2] << 16) : (0xFFFF << 16)) | (q->regions[i].state_sequence[regional_state_count - 1] & 0xFFFF);
 
       k = kh_get(hms, khms_states, reachable_state_id);
       if (k != kh_end(khms_states)) {
@@ -5921,7 +5921,7 @@ AFLNET_REGIONS_SELECTION:;
         u32 regionalStateCount = queue_cur->regions[i].state_count;
         if (regionalStateCount > 0) {
           //reachableStateID is the last ID in the state_sequence
-          u32 reachableStateID = queue_cur->regions[i].state_sequence[regionalStateCount - 1];
+          u32 reachableStateID = (regionalStateCount > 1 ? (queue_cur->regions[i].state_sequence[regionalStateCount - 2] << 16) : (0xFFFF << 16)) | (queue_cur->regions[i].state_sequence[regionalStateCount - 1] & 0xFFFF);
           M2_start_region_ID++;
           if (reachableStateID == target_state_id) break;
         } else {
