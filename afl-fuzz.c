@@ -890,7 +890,7 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
   //Update the states hashtable to keep the list of seeds which help us to reach a specific state
   //Iterate over the regions & their annotated state (sub)sequences and update the hashtable accordingly
   //All seed should "reach" state 0 (initial state) so we add this one to the map first
-  k = kh_get(hms, khms_states, 0);
+  k = kh_get(hms, khms_states, 0xFFFF << 16);
   if (k != kh_end(khms_states)) {
     state = kh_val(khms_states, k);
     state->seeds = (void **) ck_realloc (state->seeds, (state->seeds_count + 1) * sizeof(void *));
