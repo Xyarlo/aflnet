@@ -9258,6 +9258,7 @@ int main(int argc, char** argv) {
   SAYF("Finished dry run");
 
   cull_queue();
+  SAYF("Culled queue");
 
   show_init_stats();
   SAYF("Finished showing initial stats");
