@@ -651,18 +651,18 @@ unsigned int choose_target_state(u8 mode) {
 
   switch (mode) {
     case RANDOM_SELECTION: //Random state selection
-      SAYF("Using random state selection");
+      SAYF("Using random state selection\n");
       selected_state_index = UR(state_ids_count);
       result = state_ids[selected_state_index];
       break;
     case ROUND_ROBIN: //Round-robin state selection
-      SAYF("Using regular round-robin state selection");
+      SAYF("Using regular round-robin state selection\n");
       result = state_ids[selected_state_index];
       selected_state_index++;
       if (selected_state_index == state_ids_count) selected_state_index = 0;
       break;
     case FAVOR:
-      SAYF("Using favor mode state selection");
+      SAYF("Using favor mode state selection\n");
       /* Do ROUND_ROBIN for a few cycles to get enough statistical information*/
       if (state_cycles < 5) {
         result = state_ids[selected_state_index];
@@ -671,7 +671,9 @@ unsigned int choose_target_state(u8 mode) {
           selected_state_index = 0;
           state_cycles++;
           u64 mode_change_ms = get_cur_time();
+          fflush(stdout);
           SAYF("Round Robin starting cycle %lu at %llu", state_cycles, ((mode_change_ms - start_time) * 60 * 1000));
+          fflush(stdout);
         }
         break;
       }
@@ -700,18 +702,15 @@ struct queue_entry *choose_seed(u32 target_state_id, u8 mode)
 
     switch (mode) {
       case RANDOM_SELECTION: //Random seed selection
-        SAYF("Using random seed selection");
         state->selected_seed_index = UR(state->seeds_count);
         result = state->seeds[state->selected_seed_index];
         break;
       case ROUND_ROBIN: //Round-robin seed selection
-        SAYF("Using round-robin seed selection");
         result = state->seeds[state->selected_seed_index];
         state->selected_seed_index++;
         if (state->selected_seed_index == state->seeds_count) state->selected_seed_index = 0;
         break;
       case FAVOR:
-        SAYF("Using favor seed selection");
         if (state->seeds_count > 10) {
           //Do seed selection similar to AFL + take into account state-aware information
           //e.g., was_fuzzed information becomes state-aware
@@ -8825,7 +8824,7 @@ static int check_ep_capability(cap_value_t cap, const char *filename) {
 
 int main(int argc, char** argv) {
 
-  printf("Starting tuple-states fuzzing...");
+  printf("Starting tuple-states fuzzing...\n");
 
   s32 opt;
   u64 prev_queued = 0;
@@ -9229,7 +9228,6 @@ int main(int argc, char** argv) {
   init_count_class16();
 
   setup_ipsm();
-  SAYF("Finished setting up ipsm");
 
   setup_dirs_fds();
   read_testcases();
@@ -9255,21 +9253,18 @@ int main(int argc, char** argv) {
     use_argv = argv + optind;
 
   perform_dry_run(use_argv);
-  SAYF("Finished dry run");
 
   cull_queue();
-  SAYF("Culled queue");
 
   show_init_stats();
-  SAYF("Finished showing initial stats");
+  fflush(stdout);
+  SAYF("Finished showing initial stats\n");
+  fflush(stdout);
 
   seek_to = find_start_position();
-  SAYF("Found start position");
 
   write_stats_file(0, 0, 0);
-  SAYF("Wrote stats file");
   save_auto();
-  SAYF("Auto saved");
 
   if (stop_soon) goto stop_fuzzing;
 
@@ -9281,10 +9276,8 @@ int main(int argc, char** argv) {
     if (stop_soon) goto stop_fuzzing;
   }
 
-  SAYF("Should enter state aware mode now");
-
   if (state_aware_mode) {
-    SAYF("Entering state_aware_mode");
+    SAYF("Entering state_aware_mode\n");
 
     if (state_ids_count == 0) {
       PFATAL("No server states have been detected. Server responses are likely empty!");
@@ -9344,7 +9337,7 @@ int main(int argc, char** argv) {
     }
 
   } else {
-    SAYF("Entering stet_unaware_mode");
+    SAYF("Entering state_unaware_mode\n");
     while (1) {
 
       u8 skipped_fuzz;
