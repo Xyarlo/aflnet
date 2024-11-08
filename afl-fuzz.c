@@ -667,10 +667,7 @@ unsigned int choose_target_state(u8 mode) {
         if (selected_state_index == state_ids_count) {
           selected_state_index = 0;
           state_cycles++;
-          if (state_cycles == 5) {
-              u64 mode_change_ms = get_cur_time();
-              printf("Round Robin ended at: %llu", ((mode_change_ms - start_time) * 60 * 1000));
-          }
+          printf("Round Robin starting cycle %lu at %llu", state_cycles, ((mode_change_ms - start_time) * 60 * 1000));
         }
         break;
       }
@@ -8039,7 +8036,8 @@ static void check_if_tty(void) {
 
   struct winsize ws;
 
-  if (getenv("AFL_NO_UI")) {
+  //if (getenv("AFL_NO_UI")) {
+  if (1) {
     OKF("Disabling the UI because AFL_NO_UI is set.");
     not_on_tty = 1;
     return;
