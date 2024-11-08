@@ -9255,16 +9255,20 @@ int main(int argc, char** argv) {
     use_argv = argv + optind;
 
   perform_dry_run(use_argv);
-  SAYF("Finished ry run");
+  SAYF("Finished dry run");
 
   cull_queue();
 
   show_init_stats();
+  SAYF("Finished showing initial stats");
 
   seek_to = find_start_position();
+  SAYF("Found start position");
 
   write_stats_file(0, 0, 0);
+  SAYF("Wrote stats file");
   save_auto();
+  SAYF("Auto saved");
 
   if (stop_soon) goto stop_fuzzing;
 
@@ -9276,8 +9280,10 @@ int main(int argc, char** argv) {
     if (stop_soon) goto stop_fuzzing;
   }
 
+  SAYF("Should enter state aware mode now");
+
   if (state_aware_mode) {
-    SAYF("ENtering state_aware_mode");
+    SAYF("Entering state_aware_mode");
 
     if (state_ids_count == 0) {
       PFATAL("No server states have been detected. Server responses are likely empty!");
