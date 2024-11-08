@@ -651,15 +651,18 @@ unsigned int choose_target_state(u8 mode) {
 
   switch (mode) {
     case RANDOM_SELECTION: //Random state selection
+      printf("Using random state selection");
       selected_state_index = UR(state_ids_count);
       result = state_ids[selected_state_index];
       break;
     case ROUND_ROBIN: //Round-robin state selection
+      printf("Using regular round-robin state selection");
       result = state_ids[selected_state_index];
       selected_state_index++;
       if (selected_state_index == state_ids_count) selected_state_index = 0;
       break;
     case FAVOR:
+      printf("Using favor mode state selection");
       /* Do ROUND_ROBIN for a few cycles to get enough statistical information*/
       if (state_cycles < 5) {
         result = state_ids[selected_state_index];
@@ -697,15 +700,18 @@ struct queue_entry *choose_seed(u32 target_state_id, u8 mode)
 
     switch (mode) {
       case RANDOM_SELECTION: //Random seed selection
+        printf("Using random seed selection");
         state->selected_seed_index = UR(state->seeds_count);
         result = state->seeds[state->selected_seed_index];
         break;
       case ROUND_ROBIN: //Round-robin seed selection
+        printf("Using round-robin seed selection");
         result = state->seeds[state->selected_seed_index];
         state->selected_seed_index++;
         if (state->selected_seed_index == state->seeds_count) state->selected_seed_index = 0;
         break;
       case FAVOR:
+        printf("Using favor seed selection");
         if (state->seeds_count > 10) {
           //Do seed selection similar to AFL + take into account state-aware information
           //e.g., was_fuzzed information becomes state-aware
@@ -8818,6 +8824,8 @@ static int check_ep_capability(cap_value_t cap, const char *filename) {
 /* Main entry point */
 
 int main(int argc, char** argv) {
+
+  printf("Starting tuple-states fuzzing...");
 
   s32 opt;
   u64 prev_queued = 0;
