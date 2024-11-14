@@ -669,7 +669,7 @@ unsigned int choose_target_state(u8 mode) {
           state_cycles++;
           u64 mode_change_ms = get_cur_time();
           fflush(stdout);
-          SAYF("Round Robin starting cycle %lu at %llu", state_cycles + 1, ((mode_change_ms - start_time) * 60 * 1000));
+          SAYF("Round Robin starting cycle %u at %llu", state_cycles + 1, ((mode_change_ms - start_time) * 60 * 1000));
           fflush(stdout);
         }
         break;
@@ -3600,7 +3600,7 @@ static void perform_dry_run(char** argv) {
     /* Append the state coverage count to the file */
     FILE *f = fopen(fn_replay, "a");
     if (f) {
-        fprintf(f, "\n# State Coverage: %u\n", state_count); // Append state count in a unique format
+        fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
         fclose(f);
     }
     ck_free(fn_replay);
@@ -4041,7 +4041,7 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
     /* Append the state coverage count to the file */
     FILE *f = fopen(fn_replay, "a");
     if (f) {
-        fprintf(f, "\n# State Coverage: %u\n", state_count); // Append state count in a unique format
+        fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
         fclose(f);
     }
     ck_free(fn_replay);
