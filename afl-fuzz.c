@@ -412,6 +412,8 @@ kliter_t(lms) *M2_prev, *M2_next;
 unsigned int* (*extract_response_codes)(unsigned char* buf, unsigned int buf_size, unsigned int* state_count_ref) = NULL;
 region_t* (*extract_requests)(unsigned char* buf, unsigned int buf_size, unsigned int* region_count_ref) = NULL;
 
+static u64 get_cur_time(void);
+
 /* Initialize the implemented state machine as a graphviz graph */
 void setup_ipsm()
 {
@@ -665,6 +667,10 @@ unsigned int choose_target_state(u8 mode) {
         if (selected_state_index == state_ids_count) {
           selected_state_index = 0;
           state_cycles++;
+          if (state_cycles == 5) {
+              u64 mode_change_ms = get_cur_time();
+              printf("Round Robin ended at: %llu", ((mode_change_ms - start_time) * 60 * 1000));
+          }
         }
         break;
       }
