@@ -651,18 +651,15 @@ unsigned int choose_target_state(u8 mode) {
 
   switch (mode) {
     case RANDOM_SELECTION: //Random state selection
-      SAYF("Using random state selection\n");
       selected_state_index = UR(state_ids_count);
       result = state_ids[selected_state_index];
       break;
     case ROUND_ROBIN: //Round-robin state selection
-      SAYF("Using regular round-robin state selection\n");
       result = state_ids[selected_state_index];
       selected_state_index++;
       if (selected_state_index == state_ids_count) selected_state_index = 0;
       break;
     case FAVOR:
-      SAYF("Using favor mode state selection\n");
       /* Do ROUND_ROBIN for a few cycles to get enough statistical information*/
       if (state_cycles < 5) {
         result = state_ids[selected_state_index];
@@ -672,7 +669,7 @@ unsigned int choose_target_state(u8 mode) {
           state_cycles++;
           u64 mode_change_ms = get_cur_time();
           fflush(stdout);
-          SAYF("Round Robin starting cycle %lu at %llu", state_cycles, ((mode_change_ms - start_time) * 60 * 1000));
+          SAYF("Round Robin starting cycle %lu at %llu", state_cycles + 1, ((mode_change_ms - start_time) * 60 * 1000));
           fflush(stdout);
         }
         break;
