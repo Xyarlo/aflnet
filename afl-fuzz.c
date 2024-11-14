@@ -3599,6 +3599,13 @@ static void perform_dry_run(char** argv) {
     /* save the seed to file for replaying */
     u8 *fn_replay = alloc_printf("%s/replayable-queue/%s", out_dir, basename(q->fname));
     save_kl_messages_to_file(kl_messages, fn_replay, 1, messages_sent);
+
+    /* Append the state coverage count to the file */
+    FILE *f = fopen(fn_replay, "a");
+    if (f) {
+        fprintf(f, "\n# State Coverage: %u\n", state_count); // Append state count in a unique format
+        fclose(f);
+    }
     ck_free(fn_replay);
 
     /* AFLNet delete the kl_messages */
@@ -4033,6 +4040,13 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
     /* save the seed to file for replaying */
     u8 *fn_replay = alloc_printf("%s/replayable-queue/%s", out_dir, basename(queue_top->fname));
     save_kl_messages_to_file(kl_messages, fn_replay, 1, messages_sent);
+
+    /* Append the state coverage count to the file */
+    FILE *f = fopen(fn_replay, "a");
+    if (f) {
+        fprintf(f, "\n# State Coverage: %u\n", state_count); // Append state count in a unique format
+        fclose(f);
+    }
     ck_free(fn_replay);
 
     if (hnb == 2) {
