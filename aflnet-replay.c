@@ -121,8 +121,15 @@ else {fprintf(stderr, "[AFLNet-replay] Protocol %s has not been supported yet!\n
   while(!feof(fp)) {
     if (buf) {ck_free(buf); buf = NULL;}
     if (fread(&size, sizeof(unsigned int), 1, fp) > 0) {
+
+      if (size < 8) {
+        char temp_line[1024];
+        fgets(temp_line, sizeof(temp_line), fp); // Skip the current line
+        continue;
+      }
+
       packet_count++;
-    	fprintf(stderr,"\nSize of the current packet %d is  %d\n", packet_count, size);
+      fprintf(stderr,"\nSize of the current packet %d is  %d\n", packet_count, size);
 
       buf = (char *)ck_alloc(size);
       fread(buf, size, 1, fp);
