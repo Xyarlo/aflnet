@@ -667,10 +667,10 @@ unsigned int choose_target_state(u8 mode) {
         if (selected_state_index == state_ids_count) {
           selected_state_index = 0;
           state_cycles++;
-          if (state_cycles == 5) {
-              u64 mode_change_ms = get_cur_time();
-              printf("Round Robin ended at: %llu", ((mode_change_ms - start_time) * 60 * 1000));
-          }
+          u64 mode_change_ms = get_cur_time();
+          fflush(stdout);
+          SAYF("Round Robin starting cycle %u at %llu", state_cycles + 1, ((mode_change_ms - start_time) * 60 * 1000));
+          fflush(stdout);
         }
         break;
       }
@@ -3596,6 +3596,13 @@ static void perform_dry_run(char** argv) {
     /* save the seed to file for replaying */
     u8 *fn_replay = alloc_printf("%s/replayable-queue/%s", out_dir, basename(q->fname));
     save_kl_messages_to_file(kl_messages, fn_replay, 1, messages_sent);
+
+    /* Append the state coverage count to the file */
+    FILE *f = fopen(fn_replay, "a");
+    if (f) {
+        fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
+        fclose(f);
+    }
     ck_free(fn_replay);
 
     /* AFLNet delete the kl_messages */
@@ -4030,6 +4037,13 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
     /* save the seed to file for replaying */
     u8 *fn_replay = alloc_printf("%s/replayable-queue/%s", out_dir, basename(queue_top->fname));
     save_kl_messages_to_file(kl_messages, fn_replay, 1, messages_sent);
+
+    /* Append the state coverage count to the file */
+    FILE *f = fopen(fn_replay, "a");
+    if (f) {
+        fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
+        fclose(f);
+    }
     ck_free(fn_replay);
 
     if (hnb == 2) {
@@ -8039,7 +8053,8 @@ static void check_if_tty(void) {
 
   struct winsize ws;
 
-  if (getenv("AFL_NO_UI")) {
+  //if (getenv("AFL_NO_UI")) {
+  if (1) {
     OKF("Disabling the UI because AFL_NO_UI is set.");
     not_on_tty = 1;
     return;
@@ -8820,6 +8835,8 @@ static int check_ep_capability(cap_value_t cap, const char *filename) {
 
 int main(int argc, char** argv) {
 
+  printf("Starting tuple-states fuzzing...\n");
+
   s32 opt;
   u64 prev_queued = 0;
   u32 sync_interval_cnt = 0, seek_to;
@@ -9251,6 +9268,9 @@ int main(int argc, char** argv) {
   cull_queue();
 
   show_init_stats();
+  fflush(stdout);
+  SAYF("Finished showing initial stats\n");
+  fflush(stdout);
 
   seek_to = find_start_position();
 
@@ -9268,6 +9288,7 @@ int main(int argc, char** argv) {
   }
 
   if (state_aware_mode) {
+    SAYF("Entering state_aware_mode\n");
 
     if (state_ids_count == 0) {
       PFATAL("No server states have been detected. Server responses are likely empty!");
@@ -9327,6 +9348,7 @@ int main(int argc, char** argv) {
     }
 
   } else {
+    SAYF("Entering state_unaware_mode\n");
     while (1) {
 
       u8 skipped_fuzz;
