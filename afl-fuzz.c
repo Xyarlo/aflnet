@@ -8054,7 +8054,7 @@ static void check_if_tty(void) {
   struct winsize ws;
 
   //if (getenv("AFL_NO_UI")) {
-  if (getenv(1) {
+  if (1) {
     OKF("Disabling the UI because AFL_NO_UI is set.");
     not_on_tty = 1;
     return;
