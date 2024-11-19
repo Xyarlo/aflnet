@@ -379,6 +379,7 @@ u32 fuzzed_map_states = 0;
 u32 fuzzed_map_qentries = 0;
 u32 max_seed_region_count = 0;
 u32 local_port;		/* TCP/UDP port number to use as source */
+u32 fuzzed_seeds_count = 0;
 
 /* flags */
 u8 use_net = 0;
@@ -3601,6 +3602,7 @@ static void perform_dry_run(char** argv) {
     FILE *f = fopen(fn_replay, "a");
     if (f) {
         fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
+        fprintf(f, "\n# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
         fclose(f);
     }
     ck_free(fn_replay);
@@ -9334,6 +9336,7 @@ int main(int argc, char** argv) {
       }
 
       skipped_fuzz = fuzz_one(use_argv);
+      if (!skipped_fuzz) fuzzed_seeds_count++;
 
       if (!stop_soon && sync_id && !skipped_fuzz) {
 
@@ -9392,6 +9395,7 @@ int main(int argc, char** argv) {
       }
 
       skipped_fuzz = fuzz_one(use_argv);
+      if (!skipped_fuzz) fuzzed_seeds_count++;
 
       if (!stop_soon && sync_id && !skipped_fuzz) {
 
