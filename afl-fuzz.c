@@ -669,7 +669,7 @@ unsigned int choose_target_state(u8 mode) {
           state_cycles++;
           u64 mode_change_ms = get_cur_time();
           fflush(stdout);
-          SAYF("Round Robin starting cycle %u at %llu", state_cycles + 1, ((mode_change_ms - start_time) * 60 * 1000));
+          SAYF("Round Robin starting cycle %u at %llu", state_cycles + 1, ((mode_change_ms - start_time) / 60 / 1000));
           fflush(stdout);
         }
         break;
