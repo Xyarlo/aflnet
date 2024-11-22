@@ -121,17 +121,18 @@ else {fprintf(stderr, "[AFLNet-replay] Protocol %s has not been supported yet!\n
   //And save all the server responses
   while(!feof(fp)) {
     if (buf) {ck_free(buf); buf = NULL;}
+
+    char temp_line[1024];
+    // Check if the line starts with '#' (comment)
+    if (fgets(temp_line, sizeof(temp_line), fp) && temp_line[0] == '#') {
+      continue; // Skip comment lines
+    }
+    // Rewind for non-comment lines to read size as a number
+    fseek(fp, -strlen(temp_line), SEEK_CUR);
+
     if (fread(&size, sizeof(unsigned int), 1, fp) > 0) {
-
-      if (size < MIN_PACKET_SIZE) {
-        char temp_line[1024];
-        fgets(temp_line, sizeof(temp_line), fp); // Skip the current line
-        fprintf(stderr, "Skipped line: %s\n", temp_line); // Debugging statement
-        continue;
-      }
-
       packet_count++;
-    	fprintf(stderr,"\nSize of the current packet %d is  %d\n", packet_count, size);
+      fprintf(stderr,"\nSize of the current packet %d is  %d\n", packet_count, size);
 
       buf = (char *)ck_alloc(size);
       fread(buf, size, 1, fp);
