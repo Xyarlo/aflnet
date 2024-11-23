@@ -647,6 +647,31 @@ u32 update_scores_and_select_next_state(u8 mode) {
   return result;
 }
 
+/* Calculate state scores and return the scores */
+u32 update_scores_and_return() {
+    if (state_ids_count == 0) return 0;
+
+    u32* state_scores = NULL;
+    state_scores = (u32*)ck_alloc(state_ids_count * sizeof(u32));
+    if (!state_scores) PFATAL("Cannot allocate memory for state_scores");
+
+    khint_t k;
+    state_info_t* state;
+    //Update the states' score
+    for (i = 0; i < state_ids_count; i++) {
+        u32 state_id = state_ids[i];
+
+        k = kh_get(hms, khms_states, state_id);
+        if (k != kh_end(khms_states)) {
+            state = kh_val(khms_states, k);
+            state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)));
+            state_scores[i] = state->score;
+        }
+    }
+
+    return state_scores;
+}
+
 /* Select a target state at which we do state-aware fuzzing */
 unsigned int choose_target_state(u8 mode) {
   u32 result = 0;
@@ -3602,8 +3627,8 @@ static void perform_dry_run(char** argv) {
     /* Append the state coverage count to the file */
     FILE *f = fopen(fn_replay, "a");
     if (f) {
-        fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
-        fprintf(f, "\n# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
+        fprintf(f, "# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
+        fprintf(f, "# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
         fclose(f);
     }
     ck_free(fn_replay);
@@ -4044,8 +4069,8 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
     /* Append the state coverage count to the file */
     FILE *f = fopen(fn_replay, "a");
     if (f) {
-        fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
-        fprintf(f, "\n# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
+        fprintf(f, "# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
+        fprintf(f, "# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
         fclose(f);
     }
     ck_free(fn_replay);
@@ -4375,6 +4400,39 @@ static void write_stats_file(double bitmap_cvg, double stability, double eps) {
 
   fclose(f);
 
+}
+
+
+/* custom function for state scores monitoring */
+
+static void write_scores_file() {
+    u8* fn = alloc_printf("%s/state_scores.csv", out_dir);
+    s32 fd;
+    FILE* f;
+
+    fd = open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+
+    if (fd < 0) PFATAL("Unable to create '%s'", fn);
+
+    ck_free(fn);
+
+    f = fdopen(fd, "w");
+
+    if (!f) PFATAL("fdopen() failed");
+
+    u32* state_scores = update_scores_and_return();
+
+    for (size_t i = 0; i < state_ids_count; i++) {
+        fprintf(f, "%u", state_scores[i]);
+        if (i < state_ids_count - 1) {
+            fprintf(f, ",");
+        }
+    }
+    fprintf(file, "\n");
+
+    if (state_scores) ck_free(state_scores);
+
+    fclose(f);
 }
 
 
@@ -9432,6 +9490,7 @@ int main(int argc, char** argv) {
 
   write_bitmap();
   write_stats_file(0, 0, 0);
+  write_scores_file();
   save_auto();
 
 stop_fuzzing:
