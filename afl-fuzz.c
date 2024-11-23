@@ -648,7 +648,7 @@ u32 update_scores_and_select_next_state(u8 mode) {
 }
 
 /* Calculate state scores and return the scores */
-u32 update_scores_and_return() {
+u32* update_scores_and_return() {
     if (state_ids_count == 0) return 0;
 
     u32* state_scores = NULL;
@@ -658,7 +658,7 @@ u32 update_scores_and_return() {
     khint_t k;
     state_info_t* state;
     //Update the states' score
-    for (i = 0; i < state_ids_count; i++) {
+    for (u32 i = 0; i < state_ids_count; i++) {
         u32 state_id = state_ids[i];
 
         k = kh_get(hms, khms_states, state_id);
@@ -4428,7 +4428,7 @@ static void write_scores_file() {
             fprintf(f, ",");
         }
     }
-    fprintf(file, "\n");
+    fprintf(f, "\n");
 
     if (state_scores) ck_free(state_scores);
 
