@@ -3599,10 +3599,10 @@ static void perform_dry_run(char** argv) {
     save_kl_messages_to_file(kl_messages, fn_replay, 1, messages_sent);
 
     /* Append the state coverage count to the file */
-    FILE *f = fopen(fn_replay, "a");
+    FILE* f = fopen(fn_replay, "a");
     if (f) {
-        fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
-        fprintf(f, "\n# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
+        fprintf(f, "# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
+        fprintf(f, "# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
         fclose(f);
     }
     ck_free(fn_replay);
@@ -4041,10 +4041,10 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
     save_kl_messages_to_file(kl_messages, fn_replay, 1, messages_sent);
 
     /* Append the state coverage count to the file */
-    FILE *f = fopen(fn_replay, "a");
+    FILE* f = fopen(fn_replay, "a");
     if (f) {
-        fprintf(f, "\n# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
-        fprintf(f, "\n# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
+        fprintf(f, "# State Coverage: %u\n", state_ids_count); // Append state count in a unique format
+        fprintf(f, "# Fuzzed Seeds: %u\n", fuzzed_seeds_count); // Append fuzzed seeds count in a unique format
         fclose(f);
     }
     ck_free(fn_replay);
