@@ -5,7 +5,6 @@
 #include "aflnet.h"
 
 #define server_wait_usecs 10000
-#define MIN_PACKET_SIZE 8
 
 unsigned int* (*extract_response_codes)(unsigned char* buf, unsigned int buf_size, unsigned int* state_count_ref) = NULL;
 
@@ -122,6 +121,7 @@ else {fprintf(stderr, "[AFLNet-replay] Protocol %s has not been supported yet!\n
   while(!feof(fp)) {
     if (buf) {ck_free(buf); buf = NULL;}
 
+    /*
     char temp_line[1024];
     // Check if the line starts with '#' (comment)
     if (fgets(temp_line, sizeof(temp_line), fp) && temp_line[0] == '#') {
@@ -130,6 +130,7 @@ else {fprintf(stderr, "[AFLNet-replay] Protocol %s has not been supported yet!\n
 
     // Rewind for non-comment lines to read size as a number
     fseek(fp, -strlen(temp_line), SEEK_CUR);
+    */
 
     if (fread(&size, sizeof(unsigned int), 1, fp) > 0) {
       packet_count++;
