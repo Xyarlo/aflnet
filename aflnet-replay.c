@@ -123,12 +123,21 @@ else {fprintf(stderr, "[AFLNet-replay] Protocol %s has not been supported yet!\n
     if (buf) {ck_free(buf); buf = NULL;}
 
     char temp_line[1024];
-    // Check if the line starts with '#' (comment)
-    if (fgets(temp_line, sizeof(temp_line), fp) && temp_line[0] == '#') {
-      continue; // Skip comment lines
+    long pos_before_line;
+
+    // Save the current file position
+    pos_before_line = ftell(fp);
+
+    // Read a line
+    if (fgets(temp_line, sizeof(temp_line), fp)) {
+        // Skip lines starting with '#'
+        if (temp_line[0] == '#') {
+            continue;
+        }
+
+        // Rewind to the start of the line for further processing
+        fseek(fp, pos_before_line, SEEK_SET);
     }
-    // Rewind for non-comment lines to read size as a number
-    fseek(fp, -strlen(temp_line), SEEK_CUR);
 
     if (fread(&size, sizeof(unsigned int), 1, fp) > 0) {
       packet_count++;
