@@ -179,7 +179,8 @@ EXP_ST u32 queued_paths,              /* Total number of queued testcases */
            useless_at_start,          /* Number of useless starting paths */
            var_byte_count,            /* Bitmap bytes with var behavior   */
            current_entry,             /* Current queue entry ID           */
-           havoc_div = 1;             /* Cycle count divisor for havoc    */
+           havoc_div = 1,             /* Cycle count divisor for havoc    */
+           phase_two_start = 0;       /* Start time of favor mode (i.e. end of round-robin) */
 
 EXP_ST u64 total_crashes,             /* Total number of crashes          */
            unique_crashes,            /* Crashes with unique signatures   */
@@ -669,9 +670,9 @@ unsigned int choose_target_state(u8 mode) {
           selected_state_index = 0;
           state_cycles++;
           u64 mode_change_ms = get_cur_time();
-          fflush(stdout);
-          SAYF("Round Robin starting cycle %u at %llu", state_cycles + 1, ((mode_change_ms - start_time) / 60 / 1000));
-          fflush(stdout);
+          if (state_cycles == 5) {
+              phase_two_start = ((mode_change_ms - start_time) / 60 / 1000);
+          }
         }
         break;
       }
@@ -4312,6 +4313,7 @@ static void write_stats_file(double bitmap_cvg, double stability, double eps) {
   }
 
   fprintf(f, "start_time        : %llu\n"
+             "phase_two_start   : %u\n"
              "last_update       : %llu\n"
              "fuzzer_pid        : %u\n"
              "cycles_done       : %llu\n"
@@ -4340,7 +4342,7 @@ static void write_stats_file(double bitmap_cvg, double stability, double eps) {
              "target_mode       : %s%s%s%s%s%s%s\n"
              "command_line      : %s\n"
              "slowest_exec_ms   : %llu\n",
-             start_time / 1000, get_cur_time() / 1000, getpid(),
+             start_time / 1000, phase_two_start, get_cur_time() / 1000, getpid(),
              queue_cycle ? (queue_cycle - 1) : 0, total_execs, eps,
              queued_paths, queued_favored, queued_discovered, queued_imported,
              max_depth, current_entry, pending_favored, pending_not_fuzzed,
