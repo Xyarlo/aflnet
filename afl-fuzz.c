@@ -660,10 +660,12 @@ u32* update_scores_and_return() {
     //Update the states' score
     for (u32 i = 0; i < state_ids_count; i++) {
         u32 state_id = state_ids[i];
+        SAYF("\nCalculating score for state: %u", state_id);
 
         k = kh_get(hms, khms_states, state_id);
         if (k != kh_end(khms_states)) {
             state = kh_val(khms_states, k);
+            SAYF("\nConfirming ID: %u", state->id);
             state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)));
             state_scores[i] = state->score;
         }
@@ -815,9 +817,11 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
     //Update the IPSM graph
     if (state_count > 1) {
       unsigned int prevStateID = (0xFFFF << 16) | (state_sequence[0] & 0xFFFF);
+      SAYF("\nprevStateID: %u, composed of: %u, %u", prevStateID, 0xFFFF, state_sequence[0]);
 
       for(i=1; i < state_count; i++) {
         unsigned int curStateID = (state_sequence[i-1] << 16) | (state_sequence[i] & 0xFFFF);
+        SAYF("\ncurStateID: %u, composed of: %u, %u", curStateID, state_sequence[i - 1], state_sequence[i]);
         char fromState[STATE_STR_LEN], toState[STATE_STR_LEN];
         snprintf(fromState, STATE_STR_LEN, "%d", prevStateID);
         snprintf(toState, STATE_STR_LEN, "%d", curStateID);
