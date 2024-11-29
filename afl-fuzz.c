@@ -506,10 +506,9 @@ u8 is_state_sequence_interesting(unsigned int *state_sequence, unsigned int stat
     trimmed_state_sequence = (u32 *)realloc(trimmed_state_sequence, count * sizeof(unsigned int));
     trimmed_state_sequence[count - 1] = state_sequence[i];
   }
-  printf("\nTrimmed sequence: ");
+  SAYF("\nTrimmed sequence: ");
   for (i = 1; i < count; i++) {
-      printf(trimmed_state_sequence[i]);
-      printf(" ");
+      SAYF("\n%u ", trimmed_state_sequence[i]);
   }
 
 
@@ -668,12 +667,10 @@ u32* update_scores_and_return() {
     //Update the states' score
     for (u32 i = 0; i < state_ids_count; i++) {
         u32 state_id = state_ids[i];
-        SAYF("\nCalculating score for state: %u", state_id);
 
         k = kh_get(hms, khms_states, state_id);
         if (k != kh_end(khms_states)) {
             state = kh_val(khms_states, k);
-            SAYF("\nConfirming ID: %u", state->id);
             state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)));
             state_scores[i] = state->score;
         }
@@ -814,10 +811,9 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
 
   q->unique_state_count = get_unique_state_count(state_sequence, state_count);
 
-  printf("\n Untrimmed sequence: ");
+  SAYF("\n Untrimmed sequence: ");
   for (i = 1; i < state_count; i++) {
-      printf(state_sequence[i]);
-      printf(" ");
+      SAYF("\n%d ", state_sequence[i]);
   }
 
   if (is_state_sequence_interesting(state_sequence, state_count)) {
