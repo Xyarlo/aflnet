@@ -507,7 +507,7 @@ u8 is_state_sequence_interesting(unsigned int *state_sequence, unsigned int stat
     trimmed_state_sequence[count - 1] = state_sequence[i];
   }
   SAYF("\nTrimmed sequence: ");
-  for (i = 1; i < count; i++) {
+  for (i = 0; i < count; i++) {
       SAYF("\n%u ", trimmed_state_sequence[i]);
   }
 
@@ -812,7 +812,7 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
   q->unique_state_count = get_unique_state_count(state_sequence, state_count);
 
   SAYF("\n Untrimmed sequence: ");
-  for (i = 1; i < state_count; i++) {
+  for (i = 0; i < state_count; i++) {
       SAYF("\n%d ", state_sequence[i]);
   }
 
