@@ -506,16 +506,24 @@ u8 is_state_sequence_interesting(unsigned int *state_sequence, unsigned int stat
     trimmed_state_sequence = (u32 *)realloc(trimmed_state_sequence, count * sizeof(unsigned int));
     trimmed_state_sequence[count - 1] = state_sequence[i];
   }
+  printf("\nTrimmed sequence: ");
+  for (i = 1; i < count; i++) {
+      printf(trimmed_state_sequence[i]);
+      printf(" ");
+  }
+
 
   //Calculate the hash based on the shortened state sequence
   u32 hashKey = hash32(trimmed_state_sequence, count * sizeof(unsigned int), 0);
   if (trimmed_state_sequence) free(trimmed_state_sequence);
 
   if (kh_get(hs32, khs_ipsm_paths, hashKey) != kh_end(khs_ipsm_paths)) {
+    SAYF("\nSequence not interesting");
     return 0;
   } else {
     int dummy;
     kh_put(hs32, khs_ipsm_paths, hashKey, &dummy);
+    SAYF("\nSequence interesting");
     return 1;
   }
 }
@@ -806,6 +814,12 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
 
   q->unique_state_count = get_unique_state_count(state_sequence, state_count);
 
+  printf("\n Untrimmed sequence: ");
+  for (i = 1; i < state_count; i++) {
+      printf(state_sequence[i]);
+      printf(" ");
+  }
+
   if (is_state_sequence_interesting(state_sequence, state_count)) {
     //Save the current kl_messages to a file which can be used to replay the newly discovered paths on the ipsm
     u8 *temp_str = state_sequence_to_string(state_sequence, state_count);
@@ -816,12 +830,12 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
 
     //Update the IPSM graph
     if (state_count > 1) {
-      unsigned int prevStateID = (0xFFFF << 16) | (state_sequence[0] & 0xFFFF);
-      SAYF("\nprevStateID: %u, composed of: %u, %u", prevStateID, 0xFFFF, state_sequence[0]);
+      unsigned int prevStateID = state_sequence[0];
+      //SAYF("\nprevStateID: %u, composed of: %u, %u", prevStateID, 0, state_sequence[0]);
 
       for(i=1; i < state_count; i++) {
         unsigned int curStateID = (state_sequence[i-1] << 16) | (state_sequence[i] & 0xFFFF);
-        SAYF("\ncurStateID: %u, composed of: %u, %u", curStateID, state_sequence[i - 1], state_sequence[i]);
+        //SAYF("\ncurStateID: %u, composed of: %u, %u", curStateID, state_sequence[i - 1], state_sequence[i]);
         char fromState[STATE_STR_LEN], toState[STATE_STR_LEN];
         snprintf(fromState, STATE_STR_LEN, "%d", prevStateID);
         snprintf(toState, STATE_STR_LEN, "%d", curStateID);
@@ -927,7 +941,7 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
   //Update the states hashtable to keep the list of seeds which help us to reach a specific state
   //Iterate over the regions & their annotated state (sub)sequences and update the hashtable accordingly
   //All seed should "reach" state 0 (initial state) so we add this one to the map first
-  k = kh_get(hms, khms_states, (0xFFFF << 16));
+  k = kh_get(hms, khms_states, 0);
   if (k != kh_end(khms_states)) {
     state = kh_val(khms_states, k);
     state->seeds = (void **) ck_realloc (state->seeds, (state->seeds_count + 1) * sizeof(void *));
