@@ -4438,7 +4438,7 @@ static void write_scores_file() {
             uint16_t high = (state->id >> 16) & 0xFFFF;
             uint16_t low = state->id & 0xFFFF;
 
-            fprintf(f, "%u,%u,%u,%u,%u,%u,%u\n",
+            fprintf(f, "%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
                 state->id,
                 high,
                 low,
