@@ -678,6 +678,21 @@ unsigned int choose_target_state(u8 mode) {
 
   switch (mode) {
     case RANDOM_SELECTION: //Random state selection
+      /* Do ROUND_ROBIN for a few cycles to mtch favor mode*/
+      if (state_cycles < 5) {
+        result = state_ids[selected_state_index];
+        selected_state_index++;
+        if (selected_state_index == state_ids_count) {
+          selected_state_index = 0;
+          state_cycles++;
+          u64 mode_change_ms = get_cur_time();
+          if (state_cycles == 5) {
+            phase_two_start = ((mode_change_ms - start_time) / 60 / 1000);
+          }
+        }
+        break;
+      }
+
       selected_state_index = UR(state_ids_count);
       result = state_ids[selected_state_index];
       break;
