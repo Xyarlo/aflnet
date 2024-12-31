@@ -9411,7 +9411,8 @@ int main(int argc, char** argv) {
         cull_queue();
 
         /* Update number of times a state has been selected for targeted fuzzing */
-        if (!delayed_scoring || state_cycles > 0) {
+        //if (!delayed_scoring || state_cycles > 0) {
+        if (1) {
           khint_t k = kh_get(hms, khms_states, target_state_id);
           if (k != kh_end(khms_states)) {
             kh_val(khms_states, k)->selected_times++;
