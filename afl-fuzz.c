@@ -836,11 +836,9 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
     //Update the IPSM graph
     if (state_count > 1) {
       unsigned int prevStateID = state_sequence[0];
-      //SAYF("\nprevStateID: %u, composed of: %u, %u", prevStateID, 0, state_sequence[0]);
 
       for(i=1; i < state_count; i++) {
         unsigned int curStateID = (state_sequence[i-1] << 16) | (state_sequence[i] & 0xFFFF);
-        //SAYF("\ncurStateID: %u, composed of: %u, %u", curStateID, state_sequence[i - 1], state_sequence[i]);
         char fromState[STATE_STR_LEN], toState[STATE_STR_LEN];
         snprintf(fromState, STATE_STR_LEN, "%d", prevStateID);
         snprintf(toState, STATE_STR_LEN, "%d", curStateID);
@@ -946,16 +944,18 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
   //Update the states hashtable to keep the list of seeds which help us to reach a specific state
   //Iterate over the regions & their annotated state (sub)sequences and update the hashtable accordingly
   //All seed should "reach" state 0 (initial state) so we add this one to the map first
-  k = kh_get(hms, khms_states, 0);
-  if (k != kh_end(khms_states)) {
-    state = kh_val(khms_states, k);
+  if (state_count > 1) {
+    k = kh_get(hms, khms_states, 0);
+    if (k != kh_end(khms_states)) {
+      state = kh_val(khms_states, k);
     state->seeds = (void **) ck_realloc (state->seeds, (state->seeds_count + 1) * sizeof(void *));
     state->seeds[state->seeds_count] = (void *)q;
-    state->seeds_count++;
+      state->seeds_count++;
 
-    was_fuzzed_map[0][q->index] = 0; //Mark it as reachable but not fuzzed
+      was_fuzzed_map[0][q->index] = 0; //Mark it as reachable but not fuzzed
   } else {
-    PFATAL("AFLNet - the states hashtable should always contain an entry of the initial state");
+      PFATAL("AFLNet - the states hashtable should always contain an entry of the initial state");
+    }
   }
 
   //Now update other states
