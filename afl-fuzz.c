@@ -822,7 +822,7 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
 
   SAYF("\n Untrimmed sequence: ");
   for (i = 0; i < state_count; i++) {
-      SAYF("\n%d ", state_sequence[i]);
+      SAYF("\n%u ", state_sequence[i]);
   }
 
   if (is_state_sequence_interesting(state_sequence, state_count)) {
@@ -944,18 +944,16 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
   //Update the states hashtable to keep the list of seeds which help us to reach a specific state
   //Iterate over the regions & their annotated state (sub)sequences and update the hashtable accordingly
   //All seed should "reach" state 0 (initial state) so we add this one to the map first
-  if (state_count > 1) {
-    k = kh_get(hms, khms_states, 0);
-    if (k != kh_end(khms_states)) {
-      state = kh_val(khms_states, k);
+  k = kh_get(hms, khms_states, 0);
+  if (k != kh_end(khms_states)) {
+    state = kh_val(khms_states, k);
     state->seeds = (void **) ck_realloc (state->seeds, (state->seeds_count + 1) * sizeof(void *));
     state->seeds[state->seeds_count] = (void *)q;
-      state->seeds_count++;
+    state->seeds_count++;
 
-      was_fuzzed_map[0][q->index] = 0; //Mark it as reachable but not fuzzed
+    was_fuzzed_map[0][q->index] = 0; //Mark it as reachable but not fuzzed
   } else {
-      PFATAL("AFLNet - the states hashtable should always contain an entry of the initial state");
-    }
+    PFATAL("AFLNet - the states hashtable should always contain an entry of the initial state");
   }
 
   //Now update other states
