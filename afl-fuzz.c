@@ -139,7 +139,8 @@ EXP_ST u8  skip_deterministic,        /* Skip deterministic stages?       */
            persistent_mode,           /* Running in persistent mode?      */
            deferred_mode,             /* Deferred forkserver mode?        */
            fast_cal,                  /* Try to calibrate faster?         */
-           delayed_scoring = 0;           /* Delay accrediting of discovered paths?         */
+           delayed_scoring = 0,       /* Delay accrediting of discovered paths?         */
+           score_multiplier = 0;      /* Compensate state scores for higher queue position?         */
 
 static s32 out_fd,                    /* Persistent fd for out_file       */
            dev_urandom_fd = -1,       /* Persistent fd for /dev/urandom   */
@@ -634,7 +635,7 @@ u32 update_scores_and_select_next_state(u8 mode) {
       state = kh_val(khms_states, k);
       switch(mode) {
         case FAVOR:
-          state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)));
+          state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)) * (log10(score_multiplier * i + 1) + 1));
           break;
         //other cases are reserved
       }
@@ -668,7 +669,7 @@ void update_scores() {
         k = kh_get(hms, khms_states, state_id);
         if (k != kh_end(khms_states)) {
             state = kh_val(khms_states, k);
-            state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)));
+            state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)) * (log10(score_multiplier * i + 1) + 1));
         }
     }
 }
@@ -8953,9 +8954,15 @@ int main(int argc, char** argv) {
   gettimeofday(&tv, &tz);
   srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
 
-  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:Z")) > 0)
+  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:ZY")) > 0)
 
     switch (opt) {
+
+      case 'Y': /* discovered paths credit delay */
+
+        if (score_multiplier) FATAL("Multiple -Y options not supported");
+        score_multiplier = 1;
+        break;
 
       case 'Z': /* discovered paths credit delay */
 
