@@ -1758,47 +1758,61 @@ unsigned int* extract_response_codes_dicom(unsigned char* buf, unsigned int buf_
 
 unsigned int* extract_response_codes_dns(unsigned char* buf, unsigned int buf_size, unsigned int* state_count_ref)
 {
-  char *mem;
-  unsigned int mem_count = 0;
-  unsigned int mem_size = 1024;
-  unsigned int *state_sequence = NULL;
-  unsigned int state_count = 0;
+    char* mem;
+    unsigned int mem_count = 0;
+    unsigned int mem_size = 1024;
+    unsigned int* state_sequence = NULL;
+    unsigned int state_count = 0;
 
-  mem=(char *)ck_alloc(mem_size);
+    // Allocate memory for intermediate buffer
+    mem = (char*)ck_alloc(mem_size);
 
-  state_count++;
-  state_sequence = (unsigned int *)ck_realloc(state_sequence, state_count * sizeof(unsigned int));
-  state_sequence[state_count - 1] = 0;
+    // Initialize state sequence
+    state_count++;
+    state_sequence = (unsigned int*)ck_realloc(state_sequence, state_count * sizeof(unsigned int));
+    state_sequence[state_count - 1] = 0;
 
-  for (unsigned int byte_count = 0; byte_count < buf_size; byte_count++) {
-    memcpy(&mem[mem_count], buf + byte_count, 1);
+    for (unsigned int byte_count = 0; byte_count < buf_size; byte_count++) {
+        memcpy(&mem[mem_count], buf + byte_count, 1);
 
-    // The original query will be included with the response.
-    if ((mem_count >= 12) && (*(mem+mem_count) == 0)) {
-      // 4 bytes left of the query. Jump to the answer.
-      byte_count += 5;
-      mem_count += 5;
+        // Check for end of a query section
+        if ((mem_count >= 12) && (*(mem + mem_count) == 0)) {
+            // Skip past the query section dynamically
+            unsigned int name_length = 0;
+            while (buf[byte_count + name_length] != 0 && (byte_count + name_length) < buf_size) {
+                name_length += buf[byte_count + name_length] + 1; // Label length + 1 for the label byte
+            }
+            name_length++; // Include the null byte
 
-      // Save the 3rd & 4th bytes as the response code
-      unsigned int message_code = (unsigned int) ((mem[2] << 8) + mem[3]);
+            if (byte_count + name_length + 4 >= buf_size) break; // Avoid out-of-bounds access
 
-      state_count++;
-      state_sequence = (unsigned int *)ck_realloc(state_sequence, state_count * sizeof(unsigned int));
-      state_sequence[state_count - 1] = message_code;
-      mem_count = 0;
-    } else {
-      mem_count++;
-      if (mem_count == mem_size) {
-        //enlarge the mem buffer
-        mem_size = mem_size * 2;
-        mem=(char *)ck_realloc(mem, mem_size);
-      }
+            byte_count += name_length + 4; // Skip name, type (2 bytes), and class (2 bytes)
+            mem_count = 0;
+
+            // Extract the response code
+            unsigned int message_code = (unsigned int)(buf[3] & 0x0F);
+
+            state_count++;
+            state_sequence = (unsigned int*)ck_realloc(state_sequence, state_count * sizeof(unsigned int));
+            state_sequence[state_count - 1] = message_code;
+        }
+        else {
+            mem_count++;
+            if (mem_count == mem_size) {
+                // Enlarge the memory buffer
+                mem_size = mem_size * 2;
+                mem = (char*)ck_realloc(mem, mem_size);
+            }
+        }
     }
-  }
-  if (mem) ck_free(mem);
-  *state_count_ref = state_count;
-  return state_sequence;
+
+    // Free allocated memory
+    if (mem) ck_free(mem);
+
+    *state_count_ref = state_count;
+    return state_sequence;
 }
+
 
 static unsigned char dtls12_version[2] = {0xFE, 0xFD};
 
