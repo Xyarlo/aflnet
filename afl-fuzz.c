@@ -797,6 +797,20 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
 
   q->unique_state_count = get_unique_state_count(state_sequence, state_count);
 
+  SAYF("Response buffer: %s\n", response_buf);
+
+  SAYF("Response buffer (hex):\n");
+  for (size_t i = 0; i < response_buf_size; i++) {
+      SAYF("%02X ", (unsigned char)response_buf[i]);
+      if ((i + 1) % 16 == 0) SAYF("\n");  // New line after 16 bytes for better readability
+  }
+  SAYF("\n");
+
+  SAYF("\n Untrimmed sequence: ");
+  for (i = 0; i < state_count; i++) {
+      SAYF("\n%u ", state_sequence[i]);
+  }
+
   if (is_state_sequence_interesting(state_sequence, state_count)) {
     //Save the current kl_messages to a file which can be used to replay the newly discovered paths on the ipsm
     u8 *temp_str = state_sequence_to_string(state_sequence, state_count);
