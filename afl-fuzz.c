@@ -141,7 +141,8 @@ EXP_ST u8  skip_deterministic,        /* Skip deterministic stages?       */
            fast_cal,                  /* Try to calibrate faster?         */
            delayed_scoring = 0,       /* Delay accrediting of discovered paths? */
            score_multiplier = 0,      /* Compensate state scores for higher queue position? */
-           frequency_penalty = 1;     /* Penalizy scores for being fuzzed too often */
+           frequency_penalty = 1,     /* Penalizy scores for being fuzzed too often */
+           less_havoc = 0;            /* Halves the number of seed mutation during havoc */
 
 static s32 out_fd,                    /* Persistent fd for out_file       */
            dev_urandom_fd = -1,       /* Persistent fd for /dev/urandom   */
@@ -7110,7 +7111,7 @@ havoc_stage:
     stage_name  = "havoc";
     stage_short = "havoc";
     stage_max   = (doing_det ? HAVOC_CYCLES_INIT : HAVOC_CYCLES) *
-                  perf_score / havoc_div / 100;
+        perf_score / havoc_div / 100 / (1 + less_havoc);
 
   } else {
 
@@ -8955,17 +8956,23 @@ int main(int argc, char** argv) {
   gettimeofday(&tv, &tz);
   srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
 
-  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:XZY")) > 0)
+  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:XZYy")) > 0)
 
     switch (opt) {
 
-      case 'X': /* discovered paths credit delay */
+      case 'y': /* reduced mutated seeds generated during havoc */
 
-        if (frequency_penalty) FATAL("Multiple -X options not supported");
+        if (less_havoc) FATAL("Multiple -y options not supported");
+        less_havoc = 1;
+        break;
+
+      case 'X': /* removed penalty for fuzzing hot spots */
+
+        if (!frequency_penalty) FATAL("Multiple -X options not supported");
         frequency_penalty = 0;
         break;
 
-      case 'Y': /* discovered paths credit delay */
+      case 'Y': /* score compensation for higher queue positions */
 
         if (score_multiplier) FATAL("Multiple -Y options not supported");
         score_multiplier = 1;
