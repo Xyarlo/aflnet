@@ -142,7 +142,8 @@ EXP_ST u8  skip_deterministic,        /* Skip deterministic stages?       */
            delayed_scoring = 0,       /* Delay accrediting of discovered paths? */
            score_multiplier = 0,      /* Compensate state scores for higher queue position? */
            frequency_penalty = 1,     /* Penalizy scores for being fuzzed too often */
-           less_havoc = 0;            /* Halves the number of seed mutation during havoc */
+           less_havoc = 0,            /* Halves the number of seed mutation during havoc */
+           sweep_crediting = 0;       /* Improves scores for all states involved in new paths */
 
 static s32 out_fd,                    /* Persistent fd for out_file       */
            dev_urandom_fd = -1,       /* Persistent fd for /dev/urandom   */
@@ -637,7 +638,11 @@ u32 update_scores_and_select_next_state(u8 mode) {
       state = kh_val(khms_states, k);
       switch(mode) {
         case FAVOR:
-          state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times * frequency_penalty + 1)) * pow(2, log(state->paths_discovered + 1)) * (log10(score_multiplier * i + 1) + 1));
+          state->score = ceil(1000 
+              * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times * frequency_penalty + 1)) 
+              * pow(2, log((sweep_crediting ? state->paths : state->paths_discovered) + 1)) 
+              * (log10(score_multiplier * i + 1) + 1)
+          );
           break;
         //other cases are reserved
       }
@@ -671,7 +676,11 @@ void update_scores() {
         k = kh_get(hms, khms_states, state_id);
         if (k != kh_end(khms_states)) {
             state = kh_val(khms_states, k);
-            state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times * frequency_penalty + 1)) * pow(2, log(state->paths_discovered + 1)) * (log10(score_multiplier * i + 1) + 1));
+            state->score = ceil(1000 
+                * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times * frequency_penalty + 1)) 
+                * pow(2, log((sweep_crediting ? state->paths : state->paths_discovered) + 1))
+                * (log10(score_multiplier * i + 1) + 1)
+            );
         }
     }
 }
@@ -8959,6 +8968,12 @@ int main(int argc, char** argv) {
   while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:XZYy")) > 0)
 
     switch (opt) {
+
+      case 'z': /* sweeping path discovery rewards */
+
+        if (sweep_crediting) FATAL("Multiple -z options not supported");
+        sweep_crediting = 1;
+        break;
 
       case 'y': /* reduced mutated seeds generated during havoc */
 
