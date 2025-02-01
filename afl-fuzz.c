@@ -195,6 +195,7 @@ EXP_ST u64 total_crashes,             /* Total number of crashes          */
            total_execs,               /* Total execve() calls             */
            slowest_exec_ms,           /* Slowest testcase non hang in ms  */
            start_time,                /* Unix start time (ms)             */
+           reset_timer,               /* Reset timer for fuzzer (minutes) */   
            last_path_time,            /* Time for most recent path (ms)   */
            last_crash_time,           /* Time for most recent crash (ms)  */
            last_hang_time,            /* Time for most recent hang (ms)   */
@@ -400,14 +401,24 @@ u8 region_level_mutation = 0;
 u8 state_selection_algo = ROUND_ROBIN, seed_selection_algo = RANDOM_SELECTION;
 u8 false_negative_reduction = 0;
 
+
+u8 second_run = 0;
+
 /* Implemented state machine */
 Agraph_t  *ipsm;
 static FILE* ipsm_dot_file;
+
+Agraph_t  *ipsm_first_run;
+static FILE* ipsm_dot_file_first_run;
 
 /* Hash table/map and list */
 klist_t(lms) *kl_messages;
 khash_t(hs32) *khs_ipsm_paths;
 khash_t(hms) *khms_states;
+
+klist_t(lms) *kl_messages_first_run;
+khash_t(hs32) *khs_ipsm_paths_first_run;
+khash_t(hms) *khms_states_first_run;
 
 //M2_prev points to the last message of M1 (i.e., prefix)
 //If M1 is empty, M2_prev == NULL
@@ -9367,6 +9378,8 @@ int main(int argc, char** argv) {
 
   get_core_count();
 
+  /////////////////////
+
 #ifdef HAVE_AFFINITY
   bind_to_free_cpu();
 #endif /* HAVE_AFFINITY */
@@ -9377,6 +9390,8 @@ int main(int argc, char** argv) {
   setup_post();
   setup_shm();
   init_count_class16();
+
+START_FUZZER:
 
   setup_ipsm();
 
@@ -9397,6 +9412,7 @@ int main(int argc, char** argv) {
   check_binary(argv[optind]);
 
   start_time = get_cur_time();
+  reset_timer = 600 + rand() % (2280 - 600 + 1);
 
   if (qemu_mode)
     use_argv = get_qemu_argv(argv[0], argv + optind, argc - optind);
@@ -9435,6 +9451,22 @@ int main(int argc, char** argv) {
     }
 
     while (1) {
+      if (!second_run
+        && (reset_timer * 60 * 1000) > get_cur_time()) {
+        second_run = 1;
+
+        ipsm_first_run = ipsm;
+        ipsm_dot_file_first_run = ipsm_dot_file;
+
+        kl_messages_first_run = kl_messages;
+        khs_ipsm_paths_first_run = khs_ipsm_paths;
+        khms_states_first_run = khms_states;
+
+
+        goto START_FUZZER;
+      }
+
+
       u8 skipped_fuzz;
 
       struct queue_entry *selected_seed = NULL;
