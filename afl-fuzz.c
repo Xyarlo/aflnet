@@ -9378,8 +9378,6 @@ int main(int argc, char** argv) {
 
   get_core_count();
 
-  /////////////////////
-
 #ifdef HAVE_AFFINITY
   bind_to_free_cpu();
 #endif /* HAVE_AFFINITY */
@@ -9387,15 +9385,21 @@ int main(int argc, char** argv) {
   check_crash_handling();
   check_cpu_governor();
 
+  start_time = get_cur_time();
+  reset_timer = 600 + rand() % (2280 - 600 + 1);
+
+START_FUZZER:
+
   setup_post();
   setup_shm();
   init_count_class16();
 
-START_FUZZER:
-
   setup_ipsm();
 
-  setup_dirs_fds();
+  if (!second_run) {
+    setup_dirs_fds();   /// okay
+  }
+
   read_testcases();
   load_auto();
 
@@ -9411,19 +9415,19 @@ START_FUZZER:
 
   check_binary(argv[optind]);
 
-  start_time = get_cur_time();
-  reset_timer = 600 + rand() % (2280 - 600 + 1);
-
   if (qemu_mode)
     use_argv = get_qemu_argv(argv[0], argv + optind, argc - optind);
   else
-    use_argv = argv + optind;
+    use_argv = argv + optind; /// okay
 
   perform_dry_run(use_argv);
 
   cull_queue();
 
-  show_init_stats();
+  if (!second_run) {
+    show_init_stats(); /// okay
+  }
+  
   fflush(stdout);
   SAYF("Finished showing initial stats\n");
   fflush(stdout);
@@ -9437,7 +9441,7 @@ START_FUZZER:
 
   /* Woop woop woop */
 
-  if (!not_on_tty) {
+  if (!not_on_tty) { //always false
     sleep(4);
     start_time += 4000;
     if (stop_soon) goto stop_fuzzing;
@@ -9453,8 +9457,6 @@ START_FUZZER:
     while (1) {
       if (!second_run
         && (reset_timer * 60 * 1000) > get_cur_time()) {
-        second_run = 1;
-
         ipsm_first_run = ipsm;
         ipsm_dot_file_first_run = ipsm_dot_file;
 
@@ -9463,6 +9465,7 @@ START_FUZZER:
         khms_states_first_run = khms_states;
 
 
+        second_run = 1;
         goto START_FUZZER;
       }
 
