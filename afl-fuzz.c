@@ -158,6 +158,7 @@ static s32 forksrv_pid,               /* PID of the fork server           */
 EXP_ST u8* trace_bits;                /* SHM with instrumentation bitmap  */
 
 EXP_ST u8  virgin_bits[MAP_SIZE],     /* Regions yet untouched by fuzzing */
+           virgin_bits_first_run[MAP_SIZE],     /* Regions yet untouched by fuzzing in the first run */
            virgin_tmout[MAP_SIZE],    /* Bits we haven't seen in tmouts   */
            virgin_crash[MAP_SIZE];    /* Bits we haven't seen in crashes  */
 
@@ -169,7 +170,7 @@ static volatile u8 stop_soon,         /* Ctrl-C pressed?                  */
                    clear_screen = 1,  /* Window resized?                  */
                    child_timed_out;   /* Traced process timed out?        */
 
-EXP_ST u32 queued_paths,              /* Total number of queued testcases */
+EXP_ST u32 queued_paths,              /* Total number of queued testcases */ //problem
            queued_variable,           /* Testcases with variable behavior */
            queued_at_start,           /* Total number of initial inputs   */
            queued_discovered,         /* Items discovered during this run */
@@ -9463,6 +9464,9 @@ START_FUZZER:
         kl_messages_first_run = kl_messages;
         khs_ipsm_paths_first_run = khs_ipsm_paths;
         khms_states_first_run = khms_states;
+
+        virgin_bits_first_run = virgin_bits;
+        virgin_bits = (u8 *)malloc(MAP_SIZE * sizeof(u8));
 
 
         second_run = 1;
