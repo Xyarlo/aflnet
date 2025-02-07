@@ -138,7 +138,12 @@ EXP_ST u8  skip_deterministic,        /* Skip deterministic stages?       */
            run_over10m,               /* Run time over 10 minutes?        */
            persistent_mode,           /* Running in persistent mode?      */
            deferred_mode,             /* Deferred forkserver mode?        */
-           fast_cal;                  /* Try to calibrate faster?         */
+           fast_cal,                  /* Try to calibrate faster?         */
+           delayed_scoring = 0,       /* Delay accrediting of discovered paths? */
+           score_multiplier = 0,      /* Compensate state scores for higher queue position? */
+           frequency_penalty = 1,     /* Penalizy scores for being fuzzed too often */
+           less_havoc = 0,            /* Halves the number of seed mutation during havoc */
+           sweep_crediting = 0;       /* Improves scores for all states involved in new paths */
 
 static s32 out_fd,                    /* Persistent fd for out_file       */
            dev_urandom_fd = -1,       /* Persistent fd for /dev/urandom   */
@@ -626,7 +631,11 @@ u32 update_scores_and_select_next_state(u8 mode) {
       state = kh_val(khms_states, k);
       switch(mode) {
         case FAVOR:
-          state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)));
+            state->score = ceil(1000
+                * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times * frequency_penalty + 1))
+                * pow(2, log((sweep_crediting ? state->paths : state->paths_discovered) + 1))
+                * (log10(score_multiplier * i + 1) + 1)
+            );
           break;
         //other cases are reserved
       }
@@ -660,7 +669,11 @@ void update_scores() {
         k = kh_get(hms, khms_states, state_id);
         if (k != kh_end(khms_states)) {
             state = kh_val(khms_states, k);
-            state->score = ceil(1000 * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times + 1)) * pow(2, log(state->paths_discovered + 1)));
+            state->score = ceil(1000
+                * pow(2, -log10(log10(state->fuzzs + 1) * state->selected_times * frequency_penalty + 1))
+                * pow(2, log((sweep_crediting ? state->paths : state->paths_discovered) + 1))
+                * (log10(score_multiplier * i + 1) + 1)
+            );
         }
     }
 }
@@ -1013,10 +1026,12 @@ void update_state_aware_variables(struct queue_entry *q, u8 dry_run)
 
   //Update paths_discovered
   if (!dry_run) {
-    k = kh_get(hms, khms_states, target_state_id);
-    if (k != kh_end(khms_states)) {
-      kh_val(khms_states, k)->paths_discovered++;
-    }
+      if (!delayed_scoring || state_cycles > 0) {
+          k = kh_get(hms, khms_states, target_state_id);
+          if (k != kh_end(khms_states)) {
+              kh_val(khms_states, k)->paths_discovered++;
+          }
+      }
   }
 
   //Free state sequence
@@ -5580,7 +5595,7 @@ EXP_ST u8 common_fuzz_stuff(char** argv, u8* out_buf, u32 len) {
   fault = run_target(argv, exec_tmout);
 
   //Update fuzz count, no matter whether the generated test is interesting or not
-  if (state_aware_mode) update_fuzzs();
+  if (state_aware_mode && (!delayed_scoring || state_cycles > 0)) update_fuzzs();
 
   if (stop_soon) return 1;
 
@@ -7085,8 +7100,8 @@ havoc_stage:
 
     stage_name  = "havoc";
     stage_short = "havoc";
-    stage_max   = (doing_det ? HAVOC_CYCLES_INIT : HAVOC_CYCLES) *
-                  perf_score / havoc_div / 100;
+    stage_max = (doing_det ? HAVOC_CYCLES_INIT : HAVOC_CYCLES) *
+        perf_score / havoc_div / 100 / (1 + less_havoc);
 
   } else {
 
@@ -8929,18 +8944,48 @@ int main(int argc, char** argv) {
   gettimeofday(&tv, &tz);
   srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
 
-  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:")) > 0)
+  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:XZYy")) > 0)
 
-    switch (opt) {
+      switch (opt) {
+
+      case 'z': /* sweeping path discovery rewards */
+
+          if (sweep_crediting) FATAL("Multiple -z options not supported");
+          sweep_crediting = 1;
+          break;
+
+      case 'y': /* reduced mutated seeds generated during havoc */
+
+          if (less_havoc) FATAL("Multiple -y options not supported");
+          less_havoc = 1;
+          break;
+
+      case 'X': /* removed penalty for fuzzing hot spots */
+
+          if (!frequency_penalty) FATAL("Multiple -X options not supported");
+          frequency_penalty = 0;
+          break;
+
+      case 'Y': /* score compensation for higher queue positions */
+
+          if (score_multiplier) FATAL("Multiple -Y options not supported");
+          score_multiplier = 1;
+          break;
+
+      case 'Z': /* discovered paths credit delay */
+
+          if (delayed_scoring) FATAL("Multiple -Z options not supported");
+          delayed_scoring = 1;
+          break;
 
       case 'i': /* input dir */
 
-        if (in_dir) FATAL("Multiple -i options not supported");
-        in_dir = optarg;
+          if (in_dir) FATAL("Multiple -i options not supported");
+          in_dir = optarg;
 
-        if (!strcmp(in_dir, "-")) in_place_resume = 1;
+          if (!strcmp(in_dir, "-")) in_place_resume = 1;
 
-        break;
+          break;
 
       case 'o': /* output dir */
 
@@ -9375,9 +9420,12 @@ int main(int argc, char** argv) {
         cull_queue();
 
         /* Update number of times a state has been selected for targeted fuzzing */
-        khint_t k = kh_get(hms, khms_states, target_state_id);
-        if (k != kh_end(khms_states)) {
-          kh_val(khms_states, k)->selected_times++;
+        if (!delayed_scoring || state_cycles > 0) {
+        //if (1) {
+            khint_t k = kh_get(hms, khms_states, target_state_id);
+            if (k != kh_end(khms_states)) {
+                kh_val(khms_states, k)->selected_times++;
+            }
         }
 
         selected_seed = choose_seed(target_state_id, seed_selection_algo);
