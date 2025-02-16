@@ -143,6 +143,7 @@ EXP_ST u8  skip_deterministic,        /* Skip deterministic stages?       */
            score_multiplier = 0,      /* Compensate state scores for higher queue position? */
            frequency_penalty = 1,     /* Penalizy scores for being fuzzed too often */
            less_havoc = 0,            /* Halves the number of seed mutation during havoc */
+           skip_splicing = 0,         /* Force skip splicing */
            sweep_crediting = 0;       /* Improves scores for all states involved in new paths */
 
 static s32 out_fd,                    /* Persistent fd for out_file       */
@@ -7655,7 +7656,7 @@ havoc_stage:
 
 retry_splicing:
 
-  if (use_splicing && splice_cycle++ < SPLICE_CYCLES &&
+  if (!skip_splicing && use_splicing && splice_cycle++ < SPLICE_CYCLES &&
       queued_paths > 1 && M2_len > 1) {
 
     struct queue_entry* target;
@@ -8965,9 +8966,15 @@ int main(int argc, char** argv) {
   gettimeofday(&tv, &tz);
   srandom(tv.tv_sec ^ tv.tv_usec ^ getpid());
 
-  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:XZYyz")) > 0)
+  while ((opt = getopt(argc, argv, "+i:o:f:m:t:T:dnCB:S:M:x:QN:D:W:w:e:P:KEq:s:RFc:l:XZYyzH")) > 0)
 
     switch (opt) {
+
+      case 'H': /* skip splicing */
+
+        if (skip_splicing) FATAL("Multiple -H options not supported");
+        skip_splicing = 1;
+        break;
 
       case 'z': /* sweeping path discovery rewards */
 
